@@ -14,20 +14,13 @@ jobs:
       - name: Pull container image
         run: docker pull ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
 
-      - name: Run scraper and extract secret log
+      - name: Run scraper (with forced output)
+        env:
+          MONEYMAN_CONFIG: ${{ secrets.MONEYMAN_CONFIG }}
         run: |
-          cat << 'EOF' > config.json
-          ${{ secrets.MONEYMAN_CONFIG }}
-          EOF
-          
-          echo "מפעיל את הבוט..."
-          docker run --name moneyman_bot \
-            -v ${{ github.workspace }}/config.json:/config.json \
-            -e MONEYMAN_CONFIG_PATH=/config.json \
+          docker run --rm \
+            -e MONEYMAN_CONFIG \
+            -e MONEYMAN_UNSAFE_STDOUT="true" \
+            -e DEBUG="moneyman:*" \
             -e TZ="Asia/Jerusalem" \
-            ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest || true
-            
-          echo "==== חושף את היומן הסודי של הבוט ===="
-          docker cp moneyman_bot:/tmp/moneyman.log ./moneyman.log || echo "לא נוצר יומן"
-          cat ./moneyman.log || true
-          docker rm moneyman_bot || true
+            ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
