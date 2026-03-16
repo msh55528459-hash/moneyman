@@ -17,11 +17,12 @@ jobs:
         run: docker pull ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
 
       - name: Run scraper
-        env:
-          MONEYMAN_CONFIG: ${{ secrets.MONEYMAN_CONFIG }}
         run: |
+          echo "${{ secrets.MONEYMAN_CONFIG_B64 }}" | base64 --decode > config.json
+          
           docker run --rm \
-            -e MONEYMAN_CONFIG \
+            -v ${{ github.workspace }}/config.json:/config.json \
+            -e MONEYMAN_CONFIG_PATH=/config.json \
             -e MONEYMAN_UNSAFE_STDOUT="true" \
             -e DEBUG="moneyman:*" \
             -e TZ="Asia/Jerusalem" \
