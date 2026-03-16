@@ -2,8 +2,6 @@ name: Scrape
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "5 10,22 * * *"
 env:
   REGISTRY: ghcr.io
 jobs:
@@ -16,12 +14,20 @@ jobs:
       - name: Pull container image
         run: docker pull ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
 
-      - name: Run scraper
-        env:
-          MONEYMAN_CONFIG: ${{ secrets.MONEYMAN_CONFIG }}
+      - name: Run scraper and extract secret log
         run: |
-          docker run --rm \
-            -e MONEYMAN_CONFIG \
-            -e DEBUG="moneyman:*" \
+          cat << 'EOF' > config.json
+          ${{ secrets.MONEYMAN_CONFIG }}
+          EOF
+          
+          echo "מפעיל את הבוט..."
+          docker run --name moneyman_bot \
+            -v ${{ github.workspace }}/config.json:/config.json \
+            -e MONEYMAN_CONFIG_PATH=/config.json \
             -e TZ="Asia/Jerusalem" \
-            ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
+            ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest || true
+            
+          echo "==== חושף את היומן הסודי של הבוט ===="
+          docker cp moneyman_bot:/tmp/moneyman.log ./moneyman.log || echo "לא נוצר יומן"
+          cat ./moneyman.log || true
+          docker rm moneyman_bot || true
