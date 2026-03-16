@@ -16,15 +16,12 @@ jobs:
       - name: Pull container image
         run: docker pull ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
 
-      - name: Decode config and run scraper
+      - name: Run scraper
+        env:
+          MONEYMAN_CONFIG: ${{ secrets.MONEYMAN_CONFIG }}
         run: |
-          # מפענחים את הסוד חזרה לקובץ נקי בלי שישבר
-          echo "${{ secrets.MONEYMAN_CONFIG_B64 }}" | base64 --decode > config.json
-
-          # מריצים את הבוט על הקובץ הנקי
           docker run --rm \
-            -v ${{ github.workspace }}/config.json:/config.json \
-            -e MONEYMAN_CONFIG_PATH=/config.json \
+            -e MONEYMAN_CONFIG \
             -e DEBUG="moneyman:*" \
             -e TZ="Asia/Jerusalem" \
             ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
