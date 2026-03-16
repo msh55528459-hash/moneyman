@@ -17,8 +17,10 @@ jobs:
         run: docker pull ${{ env.REGISTRY }}/${{ steps.normalize-repository-name.outputs.repository }}:latest
 
       - name: Run scraper
+        env:
+          MY_B64_SECRET: ${{ secrets.MONEYMAN_CONFIG }}
         run: |
-          echo "${{ secrets.MONEYMAN_CONFIG_B64 }}" | base64 --decode > config.json
+          echo "$MY_B64_SECRET" | base64 --decode > config.json
           
           docker run --rm \
             -v ${{ github.workspace }}/config.json:/config.json \
